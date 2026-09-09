@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Trinder",
+    "slug": "trinder",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "com.yourcompany.trinder",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.yourcompany.trinder"
+    }
+  }
+}
