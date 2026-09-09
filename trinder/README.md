@@ -25,6 +25,19 @@ cd app && npm install && npm start
 
 The app points at `http://localhost:4000` (`app/src/api.ts` → `API_BASE`).
 
+Without `ANTHROPIC_API_KEY` (or if generation fails) the server serves a static
+demo feed, so the full swipe → save → broker flow can be tried end-to-end with
+no credentials.
+
+## App flow
+
+1. Disclaimer gate on every launch — user must acknowledge before seeing ideas.
+2. Swipe deck: left = pass, right = save the idea and open the broker sheet.
+3. Broker sheet: pick a partner broker (opens the tracked affiliate link in the
+   browser — signup and all trading happen on the broker's platform) or just
+   save the idea.
+4. Saved tab: list of right-swiped ideas.
+
 ## Before launch — do these
 
 1. Replace the placeholder affiliate URLs in `server/src/affiliate.ts` with your

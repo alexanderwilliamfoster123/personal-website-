@@ -4,23 +4,33 @@ import {
   Dimensions,
   Linking,
   PanResponder,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { brokerLink, fetchIdeas, TradeIdea } from "./src/api";
+import { Broker, brokerLink, fetchBrokers, fetchIdeas, TradeIdea } from "./src/api";
 import { IdeaCard } from "./src/IdeaCard";
+import { DisclaimerGate } from "./src/DisclaimerGate";
+import { BrokerSheet } from "./src/BrokerSheet";
+import { SavedList } from "./src/SavedList";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_W * 0.3;
-const DEFAULT_BROKER = "icmarkets";
+
+type Tab = "deck" | "saved";
 
 export default function App() {
   const [ideas, setIdeas] = useState<TradeIdea[]>([]);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
   const [disclaimer, setDisclaimer] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [index, setIndex] = useState(0);
+  const [saved, setSaved] = useState<TradeIdea[]>([]);
+  const [sheetIdea, setSheetIdea] = useState<TradeIdea | null>(null);
+  const [tab, setTab] = useState<Tab>("deck");
   const [error, setError] = useState<string | null>(null);
 
   const position = useRef(new Animated.ValueXY()).current;
@@ -30,10 +40,11 @@ export default function App() {
   ideasRef.current = ideas;
 
   useEffect(() => {
-    fetchIdeas()
-      .then((r) => {
+    Promise.all([fetchIdeas(), fetchBrokers()])
+      .then(([r, b]) => {
         setIdeas(r.ideas);
         setDisclaimer(r.disclaimer);
+        setBrokers(b);
       })
       .catch(() => setError("Couldn't load ideas — is the server running?"));
   }, []);
@@ -41,10 +52,11 @@ export default function App() {
   const advance = (liked: boolean) => {
     const idea = ideasRef.current[indexRef.current];
     if (liked && idea) {
-      // Swipe right = "I want to trade this myself" → open the broker's own
-      // platform via the affiliate link. The user takes every trade there;
-      // the app never places orders.
-      Linking.openURL(brokerLink(DEFAULT_BROKER, idea.id)).catch(() => {});
+      // Right swipe = the user chose this specific idea. Save it and offer
+      // partner brokers; any signup or trade happens on the broker's own
+      // platform — the app never places orders.
+      setSaved((s) => (s.some((x) => x.id === idea.id) ? s : [idea, ...s]));
+      setSheetIdea(idea);
     }
     position.setValue({ x: 0, y: 0 });
     setIndex((i) => i + 1);
@@ -79,52 +91,133 @@ export default function App() {
     outputRange: ["-12deg", "0deg", "12deg"],
   });
 
+  if (!accepted) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <StatusBar style="light" />
+        <DisclaimerGate
+          disclaimer={
+            disclaimer ||
+            "Trade ideas are AI-generated market commentary for educational purposes only and are not investment advice."
+          }
+          onAccept={() => setAccepted(true)}
+        />
+      </SafeAreaView>
+    );
+  }
+
   const current = ideas[index];
   const next = ideas[index + 1];
 
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" />
-      <Text style={styles.title}>Trinder</Text>
-      <View style={styles.deck}>
-        {error && <Text style={styles.empty}>{error}</Text>}
-        {!error && !current && (
-          <Text style={styles.empty}>
-            {ideas.length === 0 ? "Loading ideas…" : "No more ideas — check back soon."}
-          </Text>
-        )}
-        {next && (
-          <View style={[styles.cardWrap, styles.behind]}>
-            <IdeaCard idea={next} />
-          </View>
-        )}
-        {current && (
-          <Animated.View
-            style={[
-              styles.cardWrap,
-              { transform: [...position.getTranslateTransform(), { rotate }] },
-            ]}
-            {...pan.panHandlers}
-          >
-            <IdeaCard idea={current} />
-          </Animated.View>
-        )}
+      <View style={styles.topBar}>
+        <Text style={styles.title}>Trinder</Text>
+        <View style={styles.tabs}>
+          <TabButton label="Deck" active={tab === "deck"} onPress={() => setTab("deck")} />
+          <TabButton
+            label={`Saved (${saved.length})`}
+            active={tab === "saved"}
+            onPress={() => setTab("saved")}
+          />
+        </View>
       </View>
-      <Text style={styles.hint}>← pass · trade with broker →</Text>
-      <Text style={styles.disclaimer} numberOfLines={4}>
+
+      {tab === "saved" ? (
+        <View style={styles.savedWrap}>
+          <SavedList ideas={saved} />
+        </View>
+      ) : (
+        <>
+          <View style={styles.deck}>
+            {error && <Text style={styles.empty}>{error}</Text>}
+            {!error && !current && (
+              <Text style={styles.empty}>
+                {ideas.length === 0 ? "Loading ideas…" : "No more ideas — check back soon."}
+              </Text>
+            )}
+            {next && (
+              <View style={[styles.cardWrap, styles.behind]}>
+                <IdeaCard idea={next} />
+              </View>
+            )}
+            {current && (
+              <Animated.View
+                style={[
+                  styles.cardWrap,
+                  { transform: [...position.getTranslateTransform(), { rotate }] },
+                ]}
+                {...pan.panHandlers}
+              >
+                <IdeaCard idea={current} />
+              </Animated.View>
+            )}
+          </View>
+          <Text style={styles.hint}>← pass · save & trade →</Text>
+        </>
+      )}
+
+      <Text style={styles.disclaimer} numberOfLines={3}>
         {disclaimer}
       </Text>
+
+      <BrokerSheet
+        visible={sheetIdea !== null}
+        brokers={brokers}
+        onPick={(brokerId) => {
+          const idea = sheetIdea;
+          setSheetIdea(null);
+          if (idea) Linking.openURL(brokerLink(brokerId, idea.id)).catch(() => {});
+        }}
+        onClose={() => setSheetIdea(null)}
+      />
     </SafeAreaView>
+  );
+}
+
+function TabButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.tabBtn, active && styles.tabActive]}>
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#101017", alignItems: "center" },
-  title: { color: "#fff", fontSize: 22, fontWeight: "800", marginTop: 12 },
+  topBar: {
+    width: "90%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  title: { color: "#fff", fontSize: 22, fontWeight: "800" },
+  tabs: { flexDirection: "row", gap: 6 },
+  tabBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16 },
+  tabActive: { backgroundColor: "#26262f" },
+  tabText: { color: "#8a8a99", fontSize: 13, fontWeight: "600" },
+  tabTextActive: { color: "#fff" },
   deck: { flex: 1, width: "90%", marginVertical: 16, justifyContent: "center" },
+  savedWrap: { flex: 1, width: "90%", marginVertical: 16 },
   cardWrap: { position: "absolute", width: "100%", height: "92%" },
   behind: { transform: [{ scale: 0.96 }], opacity: 0.6 },
   empty: { color: "#8a8a99", textAlign: "center", fontSize: 16 },
   hint: { color: "#8a8a99", fontSize: 13, marginBottom: 8 },
-  disclaimer: { color: "#55555f", fontSize: 10, paddingHorizontal: 24, marginBottom: 10, textAlign: "center" },
+  disclaimer: {
+    color: "#55555f",
+    fontSize: 10,
+    paddingHorizontal: 24,
+    marginBottom: 10,
+    textAlign: "center",
+  },
 });

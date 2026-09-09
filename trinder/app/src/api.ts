@@ -19,10 +19,24 @@ export interface IdeasResponse {
   ideas: TradeIdea[];
 }
 
+export interface Broker {
+  id: string;
+  name: string;
+  regulator: string;
+  cpaNote: string;
+}
+
 export async function fetchIdeas(): Promise<IdeasResponse> {
   const res = await fetch(`${API_BASE}/ideas`);
   if (!res.ok) throw new Error(`ideas request failed: ${res.status}`);
   return res.json();
+}
+
+export async function fetchBrokers(): Promise<Broker[]> {
+  const res = await fetch(`${API_BASE}/brokers`);
+  if (!res.ok) throw new Error(`brokers request failed: ${res.status}`);
+  const body = (await res.json()) as { brokers: Broker[] };
+  return body.brokers;
 }
 
 // The affiliate link for "Trade this idea with a broker" — opens in the

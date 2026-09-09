@@ -8,7 +8,10 @@ import type { TradeIdea } from "./types.js";
 // that is what keeps the feed "non-personalized publishing" rather than
 // personal investment advice. Do not add per-user parameters to this module.
 
-const client = new Anthropic();
+let client: Anthropic | null = null;
+function getClient(): Anthropic {
+  return (client ??= new Anthropic());
+}
 
 const IdeaSchema = z.object({
   ideas: z
@@ -52,8 +55,58 @@ Respond with JSON only, matching: {"ideas":[{"pair","direction","timeframe","the
 let cache: { ideas: TradeIdea[]; expiresAt: number } = { ideas: [], expiresAt: 0 };
 const CACHE_MS = 60 * 60 * 1000; // regenerate hourly; everyone sees the same feed
 
+// Demo feed used when no ANTHROPIC_API_KEY is configured, so the app can be
+// run and reviewed end-to-end without live generation.
+const DEMO_IDEAS: Omit<TradeIdea, "id" | "generatedAt">[] = [
+  {
+    model: "technical-ai",
+    pair: "EUR/USD",
+    direction: "long",
+    timeframe: "4H",
+    thesis:
+      "Price is retesting the broken descending trendline from the March high as support, with bullish RSI divergence on the 4H. Holding above 1.0840 keeps the recovery structure intact and opens the 1.0920 supply zone.",
+    keyLevels: { entryZone: "1.0840–1.0860", invalidation: "Below 1.0800", target: "1.0920" },
+    riskNote: "US CPI prints tomorrow — expect volatility around the release.",
+  },
+  {
+    model: "macro-ai",
+    pair: "GBP/JPY",
+    direction: "short",
+    timeframe: "1D",
+    thesis:
+      "Widening expectations of a BoJ hike against a dovish repricing of the BoE puts rate differentials behind the yen. The pair is stalling at multi-month resistance while risk sentiment softens.",
+    keyLevels: { entryZone: "192.50–193.20", invalidation: "Daily close above 194.00", target: "189.80" },
+    riskNote: "Carry unwind moves in JPY crosses can be violent in both directions.",
+  },
+  {
+    model: "technical-ai",
+    pair: "USD/CAD",
+    direction: "short",
+    timeframe: "4H",
+    thesis:
+      "A double top has formed at 1.3780 with a neckline at 1.3690. Momentum has rolled over and oil strength supports CAD; a neckline break would confirm the pattern and target the measured move.",
+    keyLevels: { entryZone: "1.3690 break", invalidation: "Above 1.3785", target: "1.3600" },
+    riskNote: "Pattern is unconfirmed until the neckline breaks — watch for a fakeout.",
+  },
+  {
+    model: "macro-ai",
+    pair: "AUD/USD",
+    direction: "long",
+    timeframe: "1D",
+    thesis:
+      "Hot Australian inflation keeps the RBA hawkish while Chinese stimulus headlines support commodity currencies. The pair is basing above 0.6550 after a three-week decline.",
+    keyLevels: { entryZone: "0.6550–0.6580", invalidation: "Below 0.6500", target: "0.6700" },
+    riskNote: "Sensitive to China data — weak numbers this week would undercut the thesis.",
+  },
+];
+
+function demoFeed(): TradeIdea[] {
+  const now = new Date().toISOString();
+  return DEMO_IDEAS.map((i) => ({ ...i, id: randomUUID(), generatedAt: now }));
+}
+
 async function generateForModel(model: { name: string; prompt: string }): Promise<TradeIdea[]> {
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: "claude-opus-5",
     max_tokens: 16000,
     system: model.prompt,
@@ -83,7 +136,13 @@ async function generateForModel(model: { name: string; prompt: string }): Promis
 
 export async function getIdeas(): Promise<TradeIdea[]> {
   if (Date.now() < cache.expiresAt && cache.ideas.length > 0) return cache.ideas;
-  const results = await Promise.all(IDEA_MODELS.map(generateForModel));
-  cache = { ideas: results.flat(), expiresAt: Date.now() + CACHE_MS };
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not set");
+    const results = await Promise.all(IDEA_MODELS.map(generateForModel));
+    cache = { ideas: results.flat(), expiresAt: Date.now() + CACHE_MS };
+  } catch (err) {
+    console.warn("live generation unavailable — serving demo feed:", (err as Error).message);
+    cache = { ideas: demoFeed(), expiresAt: Date.now() + CACHE_MS };
+  }
   return cache.ideas;
 }
