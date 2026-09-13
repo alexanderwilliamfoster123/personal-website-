@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --color-void: #050607;
+  --color-obsidian: #0a0c0e;
+  --color-panel: #0e1114;
+  --color-elevated: #14181c;
+  --color-hairline: #1d2329;
+  --color-hairline-bright: #2a323a;
+  --color-ink: #f4f6f7;
+  --color-mist: #9aa5ad;
+  --color-faint: #5c666e;
+  --color-signal: #00e07f;
+  --color-signal-dim: #00b868;
+  --color-signal-deep: #044d31;
+  --color-loss: #ff4d5e;
+  --color-gold: #d8b45a;
+}
+
+html {
+  background: var(--color-void);
+  scroll-behavior: smooth;
+}
+body {
+  background: var(--color-void);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+html, body, #root { min-height: 100%; }
+
+::selection { background: rgba(0, 224, 127, 0.25); }
+
+.vq-display { font-family: var(--font-display); letter-spacing: -0.03em; }
+.vq-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.vq-glow {
+  text-shadow: 0 0 40px rgba(0, 224, 127, 0.35);
+}
+.vq-grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.vq-hero-fade {
+  background: radial-gradient(ellipse 80% 60% at 50% 35%, rgba(0,224,127,0.08), transparent 70%);
+}
+.vq-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.008));
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+}
+.vq-card:hover { border-color: var(--color-hairline-bright); }
+
+@keyframes vq-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.vq-ticker-track {
+  animation: vq-ticker 40s linear infinite;
+}
+@keyframes vq-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.vq-rise { animation: vq-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.vq-rise-1 { animation-delay: 0.08s; }
+.vq-rise-2 { animation-delay: 0.16s; }
+.vq-rise-3 { animation-delay: 0.24s; }
