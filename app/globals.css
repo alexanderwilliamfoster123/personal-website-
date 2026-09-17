@@ -1,0 +1,442 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Neue Montreal';
+  src: local('PP Neue Montreal'), local('Neue Montreal'), local('NeueMontreal-Regular'), local('Inter'), local('-apple-system');
+  font-weight: 400;
+  font-style: normal;
+}
+
+:root {
+  color-scheme: light;
+  /* ================= Figma Primary Collection ================= */
+  --50: #000000;
+  --100: #0D0D0D;
+  --200: #1A1A1A;
+  --300: #272727;
+  --400: #343434;
+  --500: #414141;
+  --600: #4E4E4E;
+  --700: #5B5B5B;
+  --800: #686868;
+  --900: #757575;
+  --1000: #828282;
+  --1100: #8F8F8F;
+  --1200: #9C9C9C;
+  --1300: #A9A9A9;
+  --1400: #B6B6B6;
+  --1500: #C3C3C3;
+  --1600: #D0D0D0;
+  --1700: #DDDDDD;
+  --1800: #EAEAEA;
+  --1900: #F7F7F7;
+  --2000: #FFFFFF;
+
+  /* ================= Figma Primary Collection (Neutral Opacities) ================= */
+  /* Neutral / 300 (#272727) */
+  --Neutral-300-45: rgba(39, 39, 39, 0.45);
+  --Neutral-300-25: rgba(39, 39, 39, 0.25);
+  --Neutral-300-15: rgba(39, 39, 39, 0.15);
+  --Neutral-300-05: rgba(39, 39, 39, 0.05);
+  --Neutral-300-01: rgba(39, 39, 39, 0.01);
+  --Neutral-300-00: rgba(39, 39, 39, 0.00);
+
+  /* Neutral / 2000 (#FFFFFF) */
+  --Neutral-2000-00: rgba(255, 255, 255, 0.00);
+  --Neutral-2000-01: rgba(255, 255, 255, 0.01);
+  --Neutral-2000-03: rgba(255, 255, 255, 0.03);
+  --Neutral-2000-10: rgba(255, 255, 255, 0.10);
+  --Neutral-2000-20: rgba(255, 255, 255, 0.20);
+  --Neutral-2000-40: rgba(255, 255, 255, 0.40);
+  --Neutral-2000-50: rgba(255, 255, 255, 0.50);
+
+  /* Neutral / 50 (#000000) */
+  --Neutral-50-00: rgba(0, 0, 0, 0.00);
+  --Neutral-50-01: rgba(0, 0, 0, 0.01);
+  --Neutral-50-03: rgba(0, 0, 0, 0.03);
+  --Neutral-50-10: rgba(0, 0, 0, 0.10);
+  --Neutral-50-20: rgba(0, 0, 0, 0.20);
+  --Neutral-50-40: rgba(0, 0, 0, 0.40);
+  --Neutral-50-50: rgba(0, 0, 0, 0.50);
+  --Neutral-50-75: rgba(0, 0, 0, 0.75);
+
+  /* ================= Figma Semantics (Light Mode) ================= */
+  --background: var(--1900, #F7F7F7);
+  --stroke-1: var(--1800, #EAEAEA);
+  --Stroke-1: var(--1800, #EAEAEA);
+  --stroke-2: var(--1700, #DDDDDD);
+  --Stroke-2: var(--1700, #DDDDDD);
+
+  --foreground: #111111;
+  --text-secondary: #707070;
+  --Text-secondary: #707070;
+  --text-tertiary: #999999;
+  --Text-tertiary: #999999;
+  --input-border: #DDD;
+  --input-bg: #FFFFFF;
+  --input-text: #111111;
+  --muted-foreground: #707070;
+  --faint: #A1A1AA;
+  --line: #E5E5E5;
+
+  /* Keyboard Semantics (Light Mode) */
+  --keyboard-text-icon: var(--400, #343434);
+  --keyboard-Fill: var(--1900, #F7F7F7);
+  --keyboard-main-inner: rgba(0, 0, 0, 0.03);
+  --keyboard-main-drop-right: rgba(0, 0, 0, 0.10);
+  --keyboard-main-drop-left: rgba(0, 0, 0, 0.10);
+  --keyboard-main-drop-down: rgba(0, 0, 0, 0.10);
+  --keyboard-stroke: var(--1700, #DDDDDD);
+  --keyboard-Keys-fill: var(--2000, #FFFFFF);
+  --keyboard-key-bg: var(--2000, #FFFFFF);
+  --keyboard-key-linear-1: #B6B6B6;
+  --keyboard-Key-linear-2: var(--Neutral-2000-00, rgba(255, 255, 255, 0.00));
+  --keyboard-inner-shadow: rgba(0, 0, 0, 0.03);
+  --keyboard-drop-all: rgba(0, 0, 0, 0.01);
+  --keyboard-drop-right: rgba(0, 0, 0, 0.01);
+  --keyboard-drop-left: rgba(39, 39, 39, 0.03);
+  --keyboard-drop-down: rgba(39, 39, 39, 0.10);
+  --keyboard-drop-up: rgba(0, 0, 0, 0.01);
+  --keyboard-key-text: var(--400, #343434);
+  --keyboard-key-subtext: var(--800, #686868);
+  --keyboard-key-active: #E8E8E8;
+
+  /* Card Semantics (Light Mode) */
+  --card-stroke: #EAEAEA;
+  --card-fill-1: var(--2000, #FFFFFF);
+  --card-fill-2: var(--1800, #EAEAEA);
+  --card-card-fill-1: var(--2000, #FFFFFF);
+  --card-card-fill-2: var(--1800, #EAEAEA);
+  --button-shadow-1: rgba(0, 0, 0, 0.03);
+  --dark-card-fill: linear-gradient(180deg, var(--card-card-fill-1, #FFFFFF) 0%, var(--card-card-fill-2, #EAEAEA) 100%);
+  --reciept-fill: #EAEAEA;
+  --receipt-fill: #EAEAEA;
+  --reciept-radius: 12px;
+  --reciept-stroke: 0.5px solid var(--card-stroke, #EAEAEA);
+  --reciept-shadow: 4px 0 10px 0 var(--Neutral-300-05, rgba(39, 39, 39, 0.05)), 0 4px 16px 0 var(--Neutral-300-15, rgba(39, 39, 39, 0.15));
+  --Neutral-50-10: rgba(0, 0, 0, 0.10);
+  --Neutral-300-01: rgba(39, 39, 39, 0.02);
+  --Neutral-300-05: rgba(39, 39, 39, 0.08);
+  --Neutral-300-15: rgba(39, 39, 39, 0.15);
+
+  /* Button Semantics (Light Mode) */
+  --button-text-enabled: var(--50, #000000);
+  --button-text-hover: var(--500, #414141);
+  --secondary-fill: var(--1700, #DDDDDD);
+  --button-secondary-fill: var(--1700, #DDDDDD);
+  --button-text-disabled: var(--500, #414141);
+  --button-shadow-1: var(--Neutral-50-03, rgba(0, 0, 0, 0.03));
+  --button-shadow-2: var(--Neutral-50-20, rgba(0, 0, 0, 0.20));
+
+  /* Icon Semantics (Light Mode) */
+  --icon-primary: var(--50, #000000);
+  --icon-secondary: var(--1000, #828282);
+  --icon-tertiary: var(--1400, #B6B6B6);
+
+  /* Text Semantics (Light Mode) */
+  --text-primary: var(--50, #000000);
+  --text-secondary: var(--600, #4E4E4E);
+  --Text-secondary: var(--600, #4E4E4E);
+  --text-tertiary: var(--1300, #A9A9A9);
+  --Text-tertiary: var(--1300, #A9A9A9);
+
+  /* Navigation Semantics (Light Mode) */
+  --navigation-stroke: #FFFFFF;
+  --navigation-stroke-gradient: linear-gradient(306deg, var(--Neutral-50-10, rgba(0, 0, 0, 0.10)) 8.36%, var(--Neutral-2000-01, rgba(255, 255, 255, 0.01)) 59.04%), linear-gradient(156deg, var(--Neutral-50-20, rgba(0, 0, 0, 0.20)) 9.43%, var(--Neutral-2000-01, rgba(255, 255, 255, 0.01)) 43.28%);
+  --navigation-fill: rgba(39, 39, 39, 0.03);
+  --navigation-shadow: 0 4px 4px 0 var(--button-shadow-1, rgba(0, 0, 0, 0.03)), 6px 80px 80px 0 rgba(255, 255, 255, 0.01) inset, 0 -1px 1px 0 rgba(255, 255, 255, 0.10) inset, 0 1px 1px 0 rgba(255, 255, 255, 0.10) inset;
+  --navigation-radius: 12px;
+}
+
+[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+  /* ================= Figma Semantics (Dark Mode) ================= */
+  --background: var(--100, #0D0D0D);
+  --stroke-1: var(--400, #343434);
+  --Stroke-1: var(--400, #343434);
+  --stroke-2: var(--200, #1A1A1A);
+  --Stroke-2: var(--200, #1A1A1A);
+
+  /* Navigation Semantics (Dark Mode) */
+  --navigation-stroke: var(--Neutral-50-00, rgba(0, 0, 0, 0.00));
+  --navigation-stroke-gradient: rgba(255, 255, 255, 0.10);
+  --navigation-fill: rgba(18, 18, 18, 0.75);
+  --navigation-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  --navigation-radius: 12px;
+
+  /* Button Semantics (Dark Mode) */
+  --button-text-enabled: var(--2000, #FFFFFF);
+  --button-text-hover: var(--500, #414141);
+  --secondary-fill: var(--200, #1A1A1A);
+  --button-secondary-fill: var(--200, #1A1A1A);
+  --button-text-disabled: var(--1200, #9C9C9C);
+  --button-shadow-1: var(--Neutral-50-20, rgba(0, 0, 0, 0.20));
+  --button-shadow-2: var(--Neutral-50-50, rgba(0, 0, 0, 0.50));
+
+  /* Icon Semantics (Dark Mode) */
+  --icon-primary: var(--2000, #FFFFFF);
+  --icon-secondary: var(--900, #757575);
+  --icon-tertiary: var(--500, #414141);
+
+  /* Text Semantics (Dark Mode) */
+  --text-primary: var(--2000, #FFFFFF);
+  --text-secondary: var(--1100, #8F8F8F);
+  --Text-secondary: var(--1100, #8F8F8F);
+  --text-tertiary: var(--600, #4E4E4E);
+  --Text-tertiary: var(--600, #4E4E4E);
+
+  /* Card Semantics (Dark Mode) */
+  --card-stroke: linear-gradient(180deg, var(--stroke-1, #343434) 0%, var(--stroke-2, #1A1A1A) 100%);
+  --card-fill-1: var(--200, #1A1A1A);
+  --card-fill-2: var(--100, #0D0D0D);
+  --card-card-fill-1: var(--200, #1A1A1A);
+  --card-card-fill-2: var(--100, #0D0D0D);
+  --dark-card-fill: linear-gradient(180deg, var(--card-card-fill-1, #1A1A1A) 0%, var(--card-card-fill-2, #0D0D0D) 100%);
+  --folder-linear: linear-gradient(180deg, var(--300, #272727) 0%, var(--100, #0D0D0D) 100%);
+  --reciept-fill: var(--200, #1A1A1A);
+  --receipt-fill: var(--200, #1A1A1A);
+  --reciept-radius: 24px;
+  --reciept-stroke: 0.5px solid var(--400, #343434);
+  --reciept-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  --foreground: #ffffff;
+  --text-secondary: #8F8F8F;
+  --Text-secondary: #8F8F8F;
+  --text-tertiary: #4E4E4E;
+  --Text-tertiary: #4E4E4E;
+  --input-border: #272727;
+  --input-bg: rgba(12, 12, 14, 0.6);
+  --input-text: #EDEDED;
+  --muted-foreground: #8F8F8F;
+  --faint: #52525b;
+  --line: #27272a;
+
+  /* Keyboard Semantics (Dark Mode) */
+  --keyboard-text-icon: var(--1400, #B6B6B6);
+  --keyboard-Fill: var(--200, #1A1A1A);
+  --keyboard-main-inner: var(--Neutral-50-20, rgba(0, 0, 0, 0.20));
+  --keyboard-main-drop-right: var(--Neutral-50-40, rgba(0, 0, 0, 0.40));
+  --keyboard-main-drop-left: var(--Neutral-50-40, rgba(0, 0, 0, 0.40));
+  --keyboard-main-drop-down: var(--Neutral-50-40, rgba(0, 0, 0, 0.40));
+  --keyboard-stroke: var(--300, #272727);
+  --keyboard-Keys-fill: var(--50, #000000);
+  --keyboard-key-bg: var(--50, #000000);
+  --keyboard-key-linear-1: var(--700, #5B5B5B);
+  --keyboard-Key-linear-2: var(--Neutral-50-00, rgba(0, 0, 0, 0.00));
+  --keyboard-inner-shadow: var(--Neutral-50-20, rgba(0, 0, 0, 0.20));
+  --keyboard-drop-all: var(--Neutral-50-20, rgba(0, 0, 0, 0.20));
+  --keyboard-drop-right: var(--Neutral-50-75, rgba(0, 0, 0, 0.75));
+  --keyboard-drop-left: var(--Neutral-300-45, rgba(39, 39, 39, 0.45));
+  --keyboard-drop-down: var(--Neutral-300-45, rgba(39, 39, 39, 0.45));
+  --keyboard-drop-up: var(--Neutral-50-75, rgba(0, 0, 0, 0.75));
+  --keyboard-key-text: var(--1400, #B6B6B6);
+  --keyboard-key-subtext: var(--1100, #8F8F8F);
+  --keyboard-key-active: var(--100, #0D0D0D);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-stroke-1: var(--stroke-1);
+  --color-stroke-2: var(--stroke-2);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-input-border: var(--input-border);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --font-sans: "Neue Montreal", var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom Animations */
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cursor-blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-cursor-blink {
+  animation: cursor-blink 1s ease-in-out infinite;
+}
+
+.text-secondary {
+  color: var(--Text-secondary);
+}
+
+.text-tertiary {
+  color: var(--Text-tertiary);
+}
+
+.border-line {
+  border-color: var(--line);
+}
+
+.text-faint {
+  color: var(--faint);
+}
+
+.text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+.text-foreground {
+  color: var(--foreground);
+}
+
+.bg-foreground {
+  background-color: var(--foreground);
+}
+
+.border-stroke-1 {
+  border-color: var(--stroke-1);
+}
+
+.border-stroke-2 {
+  border-color: var(--stroke-2);
+}
+
+@media (max-width: 639px) {
+  .building-fade-mask {
+    mask-image: linear-gradient(to bottom, black 0%, black 35%, rgba(0, 0, 0, 0.2) 55%, transparent 82%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 35%, rgba(0, 0, 0, 0.2) 55%, transparent 82%);
+  }
+}
+
+/* ================= Global Custom Scrollbar ================= */
+:root {
+  --scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.42);
+  --scrollbar-thumb-active: rgba(0, 0, 0, 0.60);
+}
+
+.dark,
+[data-theme="dark"] {
+  --scrollbar-thumb: rgba(255, 255, 255, 0.35);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.55);
+  --scrollbar-thumb-active: rgba(255, 255, 255, 0.75);
+}
+
+/* Firefox */
+html,
+body,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* WebKit / Chromium (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.15s ease;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active,
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+.wr-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(7px);
+  transform: translateY(0.12em);
+  animation: wr-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes wr-in {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wr-word {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* ================= Neutralize Browser Autofill Background ================= */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--foreground) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--background) inset !important;
+  box-shadow: 0 0 0px 1000px var(--background) inset !important;
+  transition: background-color 5000000s ease-in-out 0s, color 5000000s ease-in-out 0s !important;
+  caret-color: var(--foreground) !important;
+  background-color: transparent !important;
+}
+
+/* Gate input specific autofill matching */
+.gate-input:-webkit-autofill,
+.gate-input:-webkit-autofill:hover,
+.gate-input:-webkit-autofill:focus,
+.gate-input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--foreground) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--background) inset !important;
+  box-shadow: 0 0 0px 1000px var(--background) inset !important;
+  transition: background-color 5000000s ease-in-out 0s, color 5000000s ease-in-out 0s !important;
+  caret-color: var(--foreground) !important;
+  background-color: transparent !important;
+}

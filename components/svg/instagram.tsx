@@ -1,0 +1,58 @@
+"use client";
+
+import React from "react";
+
+interface InstagramIconProps {
+  className?: string;
+  width?: number;
+  height?: number;
+}
+
+export default function InstagramIcon({
+  className,
+  width = 18,
+  height = 18,
+}: InstagramIconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={width}
+      height={height}
+      viewBox="0 0 18 18"
+      fill="none"
+      className={className}
+    >
+      <g clipPath="url(#clip0_instagram)">
+        <path
+          d="M12.75 1.5H5.25C3.17893 1.5 1.5 3.17893 1.5 5.25V12.75C1.5 14.8211 3.17893 16.5 5.25 16.5H12.75C14.8211 16.5 16.5 14.8211 16.5 12.75V5.25C16.5 3.17893 14.8211 1.5 12.75 1.5Z"
+          stroke="currentColor"
+          strokeWidth="1.125"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        <path
+          d="M11.9998 8.52748C12.0923 9.15167 11.9857 9.78914 11.6951 10.3492C11.4045 10.9093 10.9446 11.3635 10.381 11.6472C9.81736 11.9309 9.17862 12.0297 8.55562 11.9294C7.93262 11.8292 7.3571 11.535 6.91091 11.0889C6.46472 10.6427 6.17058 10.0671 6.07033 9.44414C5.97008 8.82115 6.06883 8.1824 6.35253 7.61876C6.63622 7.05512 7.09042 6.59529 7.65052 6.30466C8.21062 6.01404 8.8481 5.90742 9.47228 5.99998C10.109 6.0944 10.6984 6.39108 11.1536 6.84621C11.6087 7.30134 11.9054 7.89079 11.9998 8.52748Z"
+          stroke="currentColor"
+          strokeWidth="1.125"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        <path
+          d="M13.125 4.875H13.1325"
+          stroke="currentColor"
+          strokeWidth="1.125"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+
+      <defs>
+        <clipPath id="clip0_instagram">
+          <rect width="18" height="18" fill="white" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+}
