@@ -49,37 +49,40 @@ const CompanyCardScroll = forwardRef<HTMLDivElement, CompanyCardScrollProps>(
       const scene = sceneRef.current;
       const viewport = viewportRef.current;
       const wheel = wheelRef.current;
-      if (!scene || !viewport || !wheel || !count || reducedMotion) return;
+      // A single investment is ordinary document content: no entrance trigger,
+      // sticky stage, rotation tween, or resize-refresh cycle.
+      if (!scene || !viewport || !wheel || count < 2 || reducedMotion) return;
 
       ScrollTrigger.config({ ignoreMobileResize: true });
       const context = gsap.context(() => {
         gsap.fromTo(wheel.querySelectorAll(".company-wheel-entry"), {
-          scale: 0,
+          scale: 0.96,
           autoAlpha: 0,
         }, {
           scale: 1,
           autoAlpha: 1,
-          duration: 1.2,
-          ease: "back.out(1.2)",
+          duration: 0.6,
+          ease: "power2.out",
           stagger: 0.05,
           scrollTrigger: {
             trigger: scene,
             start: "top 80%",
-            toggleActions: "play none none reverse",
+            once: true,
           },
         });
 
         if (count > 1) {
           rotationRef.current = gsap.fromTo(wheel, { rotation: 0 }, {
             rotation: -angleStep * (count - 1),
+            force3D: true,
             ease: "none",
             scrollTrigger: {
               trigger: scene,
               // CSS owns stickiness; no fixed pin, spacer, or touch interception.
               start: () => `top ${parseFloat(getComputedStyle(viewport).top)}px`,
               end: () => `+=${scene.offsetHeight - viewport.offsetHeight}`,
-              // Preserve the original desktop easing on every device.
-              scrub: 1,
+              // A short settle follows the swipe without a one-second tail.
+              scrub: 0.35,
               invalidateOnRefresh: true,
             },
           });
@@ -93,7 +96,16 @@ const CompanyCardScroll = forwardRef<HTMLDivElement, CompanyCardScrollProps>(
         cancelAnimationFrame(refreshFrame);
         refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
       };
-      const observer = new ResizeObserver(refresh);
+      let previousWidth = viewport.offsetWidth;
+      let previousHeight = viewport.offsetHeight;
+      const observer = new ResizeObserver(() => {
+        const width = viewport.offsetWidth;
+        const height = viewport.offsetHeight;
+        if (width === previousWidth && height === previousHeight) return;
+        previousWidth = width;
+        previousHeight = height;
+        refresh();
+      });
       observer.observe(viewport);
       refresh();
       return () => {
@@ -123,6 +135,7 @@ const CompanyCardScroll = forwardRef<HTMLDivElement, CompanyCardScrollProps>(
         ref={sceneRef}
         className={`company-wheel-scene ${className}`}
         data-rotating={count > 1 && !reducedMotion ? "true" : "false"}
+        data-single={count === 1 ? "true" : undefined}
         style={{
           "--wheel-steps": Math.max(0, count - 1),
           "--wheel-max-travel": `${scrollDuration}px`,
@@ -140,7 +153,7 @@ const CompanyCardScroll = forwardRef<HTMLDivElement, CompanyCardScrollProps>(
                     className="company-wheel-position"
                     style={{
                       zIndex: isHovered ? 50 : 10,
-                      transform: `translate(-50%, -50%) rotate(${index * angleStep}deg) translateY(calc(-1 * var(--wheel-radius)))`,
+                      transform: count === 1 ? "translate(-50%, -50%)" : `translate(-50%, -50%) rotate(${index * angleStep}deg) translateY(calc(-1 * var(--wheel-radius)))`,
                     }}
                   >
                     <div className="company-wheel-entry">

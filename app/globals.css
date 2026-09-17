@@ -748,13 +748,28 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--text-primary); 
 }
 .company-wheel-position { position: absolute; top: 50%; left: 50%; }
 .company-wheel-card { touch-action: pan-y pinch-zoom; }
+.company-wheel-scene[data-single="true"] { height: calc(var(--wheel-card-width) * 4 / 3 + 48px); }
+.company-wheel-scene[data-single="true"] .company-wheel-viewport { position: relative; top: auto; height: 100%; }
+.company-wheel-scene[data-single="true"] .company-wheel-window { mask-image: none; -webkit-mask-image: none; }
+.company-wheel-scene[data-single="true"] .company-wheel { inset: 0; width: 100%; height: 100%; translate: none; will-change: auto; }
 @media (max-width: 767px), (max-height: 600px) {
   .company-wheel-scene {
-    --wheel-card-width: min(156px, 40vw, calc((100svh - 144px - var(--safe-top) - var(--safe-bottom)) / 2.9865384615));
+    --wheel-card-width: min(116px, 29vw, calc((100svh - 144px - var(--safe-top) - var(--safe-bottom)) / 2.9865384615));
     --wheel-travel: min(var(--wheel-max-travel), calc(85svh * var(--wheel-steps)));
   }
   .company-wheel-viewport { top: min(35svh, calc(100svh - var(--wheel-stage-height) - 84px - var(--safe-bottom))); }
   .company-collection-invested { margin-top: clamp(80px, 18svh, 180px); }
+}
+@media (max-width: 767px) {
+  .home-caption { font-size: 10px; }
+  .company-collection h1, .company-collection h2, .collection-heading { font-size: 10px; line-height: 16px; }
+  .company-wheel-card .card-caption { font-size: 10px; }
+  .company-wheel-card .card-number { font-size: 8px; }
+  .company-wheel-card { border-radius: 9px; }
+  .company-wheel-card::after { border-radius: 7px; }
+  .companies-mobile .snap-carousel { --carousel-card-width: min(29vw, 116px); }
+  .apple-dock-panel { gap: 0; padding-inline: 4px; border-radius: 13px; }
+  .apple-dock-icon > svg { width: 70%; height: 70%; }
 }
 [data-theme="dark"] .company-card-surface {
   --company-edge: #393939;

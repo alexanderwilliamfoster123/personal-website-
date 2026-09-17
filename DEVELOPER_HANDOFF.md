@@ -14,10 +14,12 @@ Working site: https://alexander-foster-workshop.alexwfoster.chatgpt.site
 
 ## Mobile scroll implementation
 
-- `components/circular-company-scroll.tsx`: the original full circular wheel on every screen size, original entrance and scrub easing, native CSS sticky positioning, no JavaScript pin spacers or synthetic touch scrolling. The briefly introduced tight arc was reverted.
+- `components/circular-company-scroll.tsx`: the original full circular wheel on every screen size, native CSS sticky positioning, no JavaScript pin spacers or synthetic touch scrolling. The briefly introduced tight arc was reverted. A gentle one-time entrance replaces the bouncing/reversing entrance, and scrub settles in 0.35s instead of 1s.
 - `app/globals.css`: original desktop geometry, proportional mobile scaling, stable viewport height, safe-area spacing, and `overflow-x: clip` so an ancestor does not break sticky positioning.
 - `components/panels/companies-panel.tsx`: switches to the native carousel only when the visitor requests reduced motion. Preserves company article navigation and the saved scroll position.
 - Founded order: 01 Vertus, 02 Vanquish, 03 Alexander William. Invested: 01 Omera, stationary.
+- Mobile cards use 29vw capped at 116px; desktop card dimensions are unchanged. Mobile headings, card labels and dock artwork are smaller; dock tap targets remain 44px.
+- A single invested card has a compact ordinary-flow container with no sticky positioning, mask, entrance animation or ScrollTrigger. It moves directly with native page scrolling.
 
 ## Verification still needed on devices
 
