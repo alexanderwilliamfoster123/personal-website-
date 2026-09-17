@@ -155,29 +155,34 @@ export default function ContactPanel({ email }: { email: string }) {
         >
           {!sent && <>
             <p className="terminal-from"><span>from</span> <span>{email || "email needed at the entrance"}</span></p>
-            <label htmlFor="contact-message" className="sr-only">Your message to Alex. Enter sends; Shift and Enter starts a new line.</label>
+            <label htmlFor="contact-message" className="sr-only">Your message to Alex</label>
             <div className="terminal-editor" aria-busy={pending}>
               <span className="terminal-prompt" aria-hidden="true">›</span>
-              <Textarea
-                id="contact-message"
-                ref={textareaRef}
-                name="message"
-                className="terminal-textarea"
-                placeholder="write your message…"
-                value={draft.message}
-                readOnly={pending}
-                maxLength={10000}
-                rows={2}
-                style={{ minHeight: 64, maxHeight: 180 }}
-                aria-describedby={error ? "contact-result" : "contact-help"}
-                onChange={(event) => edit(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
-                    event.preventDefault();
-                    void submit();
-                  }
-                }}
-              />
+              <div className="terminal-input-frame">
+                <Textarea
+                  id="contact-message"
+                  ref={textareaRef}
+                  name="message"
+                  className="terminal-textarea"
+                  placeholder="write your message…"
+                  value={draft.message}
+                  readOnly={pending}
+                  maxLength={10000}
+                  rows={2}
+                  enterKeyHint="enter"
+                  style={{ minHeight: 64, maxHeight: 180 }}
+                  aria-describedby={error ? "contact-result" : "contact-help"}
+                  onChange={(event) => edit(event.target.value)}
+                  onKeyDown={(event) => {
+                    // The phone keyboard's Return key adds a line; the visible Send
+                    // button sends. Preserve the existing desktop keyboard shortcut.
+                    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229 && !window.matchMedia("(pointer: coarse)").matches) {
+                      event.preventDefault();
+                      void submit();
+                    }
+                  }}
+                />
+              </div>
             </div>
             {draft.message.length >= 9500 && <p className="terminal-count">{10000 - draft.message.length} characters left</p>}
           </>}

@@ -23,9 +23,16 @@ Working site: https://alexander-foster-workshop.alexwfoster.chatgpt.site
 
 TypeScript and production builds are checked before publication. Browser QA was unavailable in the editing session, so the change is not certified as visually identical on physical phones. Check Safari and Chrome in portrait and landscape: scroll forward/back through all three cards, fling/reverse, collapse browser chrome, open an article and return, change tabs, toggle light/dark, and enable reduced motion. Confirm there is no horizontal page scrolling and the dock remains reachable.
 
+## Mobile contact terminal
+
+- Mobile message text now displays at 12px; compact 10px terminal text and 9px sender details keep the small panel proportionate. Desktop typography is unchanged.
+- The editable textarea retains a 16px native font, with a local 0.75 transform and compensated width/height to avoid iOS focus zoom. It is not a page-level scale. The resize hook publishes its measured height for the compensation.
+- Coarse-pointer keyboards use Return for a new line and the 44px Send target for submission. The desktop Enter / Shift+Enter shortcuts are preserved.
+- Check physical iOS / Android devices for focus zoom, multiline growth and deletion, scrolling a long draft, rotation, keyboard dismissal, and send/retry. Device browser QA remains unavailable in this editing session.
+
 ## Existing integration gaps
 
-- `CONTACT_TO_EMAIL` is configured on the working Site as `contact@alexanderfoster.com`.
+- `CONTACT_TO_EMAIL` is configured on the working Site as `alex@alexanderfoster.com`.
 - Email capture and email sending are separate. Actual sending still requires a server-only `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL`. Neither sending value was configured in this session. Do not report delivery as active until a real test arrives.
 - Resend acknowledgement is only reported when the provider returns a message ID. Failed sends retain the draft and reuse an idempotency key for unchanged retries.
 - The requested company hero videos / 3D media have not been supplied. Existing article covers remain in place.

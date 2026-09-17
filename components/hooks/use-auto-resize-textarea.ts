@@ -14,10 +14,14 @@ export function useAutoResizeTextarea({ minHeight, maxHeight }: UseAutoResizeTex
     if (!textarea) return;
     const minimum = Math.max(1, minHeight);
     const maximum = Math.max(minimum, maxHeight ?? Number.POSITIVE_INFINITY);
-    textarea.style.height = `${minimum}px`;
+    const setHeight = (height: number) => {
+      textarea.style.height = `${height}px`;
+      textarea.style.setProperty("--textarea-height", `${height}px`);
+    };
+    setHeight(minimum);
     if (reset) return;
     const borderHeight = textarea.offsetHeight - textarea.clientHeight;
-    textarea.style.height = `${Math.max(minimum, Math.min(textarea.scrollHeight + borderHeight, maximum))}px`;
+    setHeight(Math.max(minimum, Math.min(textarea.scrollHeight + borderHeight, maximum)));
   }, [minHeight, maxHeight]);
 
   useEffect(() => {
