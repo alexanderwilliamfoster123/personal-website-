@@ -26,7 +26,8 @@ export default function AnimatedEnterButton({
   useEffect(() => {
     if (!shaderRef.current) return;
 
-    shader.current = new ShaderMount(
+    try {
+      shader.current = new ShaderMount(
       shaderRef.current,
       liquidMetalFragmentShader,
       {
@@ -44,7 +45,12 @@ export default function AnimatedEnterButton({
       },
       undefined,
       0.6
-    );
+      );
+    } catch {
+      // Keep the entrance usable when the browser cannot render WebGL effects.
+      shaderRef.current.replaceChildren();
+      shader.current = null;
+    }
 
     return () => {
       shader.current?.dispose();
@@ -110,6 +116,7 @@ export default function AnimatedEnterButton({
               height: "46px",
               borderRadius: "100px",
               overflow: "hidden",
+              background: "linear-gradient(135deg, #fafafa 0%, #777 28%, #dedede 52%, #555 75%, #f2f2f2 100%)",
             }}
           />
         </div>

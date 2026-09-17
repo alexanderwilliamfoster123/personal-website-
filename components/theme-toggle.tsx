@@ -14,7 +14,7 @@ export default function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="flex items-center gap-2 h-5 w-[36px]">
+      <div className="theme-toggle opacity-0">
         <div className="w-3.5 h-3.5 opacity-0" />
         <div className="w-3.5 h-3.5 opacity-0" />
       </div>
@@ -29,7 +29,7 @@ export default function ThemeToggle() {
       onClick={toggleTheme}
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
       title={`Switch to ${isDark ? "light" : "dark"} mode`}
-      className="flex items-center gap-2 cursor-pointer select-none h-5 transition-colors duration-300"
+      className="theme-toggle cursor-pointer select-none transition-colors duration-300"
     >
       <FiSun
         size={14}

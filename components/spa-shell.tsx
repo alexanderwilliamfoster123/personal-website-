@@ -1,193 +1,101 @@
 "use client";
-
-import React, { useState, useEffect, useCallback } from "react";
+import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import KeyboardGate from "@/components/keyboard-gate";
-import ReceiptScreen from "@/components/receipt-screen";
-import BottomNavigation, { TabId } from "@/components/bottom-navigation";
+import BottomNavigation, { type TabId } from "@/components/bottom-navigation";
 import HomePanel from "@/components/panels/home-panel";
-import CompaniesPanel from "@/components/panels/companies-panel";
-import SocialsPanel from "@/components/panels/socials-panel";
-// import ContactPanel from "@/components/panels/contact-panel";
 import ThemeToggle from "@/components/theme-toggle";
-import { getUserSession, clearUserSession, UserSession } from "@/lib/auth";
-
+import { getUserSession, setUserSession } from "@/lib/auth";
+const CompaniesPanel = lazy(() => import("@/components/panels/companies-panel"));
+const ContactPanel = lazy(() => import("@/components/panels/contact-panel"));
 export const ACTIVE_TAB_KEY = "alex_foster_active_tab";
-
+const validTabs: TabId[] = ["home", "companies", "contact"];
+function saveTab(tab: TabId) { try { localStorage.setItem(ACTIVE_TAB_KEY, tab); } catch { /* Storage is optional. */ } }
 export default function SPAShell() {
-  const [stage, setStage] = useState<"loading" | "gate" | "receipt" | "app">("loading");
-  const [session, setSession] = useState<UserSession | null>(null);
-  const [activeTab, setActiveTabState] = useState<TabId>("home");
+  const [stage, setStage] = useState<"loading" | "gate" | "app">("loading");
+  const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [visitorEmail, setVisitorEmail] = useState("");
   const [backAction, setBackAction] = useState<(() => void) | null>(null);
-
-  // Read session and active tab on client mount
   useEffect(() => {
-    const existingSession = getUserSession();
-    const savedTab = (localStorage.getItem(ACTIVE_TAB_KEY) as TabId) || "home";
-    const validTabs: TabId[] = ["home", "companies", "socials", "contact"];
+    let savedTab: TabId = "home";
+    try { savedTab = localStorage.getItem(ACTIVE_TAB_KEY) as TabId; } catch { /* Storage is optional. */ }
     const initialTab = validTabs.includes(savedTab) ? savedTab : "home";
-
-    if (existingSession) {
-      setSession(existingSession);
-      setActiveTabState(initialTab);
+    const session = getUserSession();
+    const showEntry = new URLSearchParams(window.location.search).get("entry") === "1";
+    if (session?.captureVersion === 1 && !showEntry) {
+      setVisitorEmail(session.email);
+      setActiveTab(initialTab);
+      saveTab(initialTab);
       setStage("app");
-      if (typeof window !== "undefined" && (!window.history.state || !window.history.state.spaTab)) {
-        window.history.replaceState({ spaTab: initialTab }, "");
-      }
-    } else {
-      setStage("gate");
-    }
+      if (!validTabs.includes(window.history.state?.spaTab)) window.history.replaceState({ spaTab: initialTab }, "");
+    } else setStage("gate");
   }, []);
-
-  // Listen for global back/forward navigation
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      const state = event.state;
-      if (state && state.spaTab) {
-        const validTabs: TabId[] = ["home", "companies", "socials", "contact"];
-        if (validTabs.includes(state.spaTab)) {
-          setActiveTabState(state.spaTab);
-          if (typeof window !== "undefined") {
-            localStorage.setItem(ACTIVE_TAB_KEY, state.spaTab);
-          }
-        }
-      }
+    const onPopState = (event: PopStateEvent) => {
+      const tab: TabId = validTabs.includes(event.state?.spaTab) ? event.state.spaTab : "home";
+      setActiveTab(tab);
+      saveTab(tab);
     };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
-
-  const handleGateComplete = (name: string, email: string) => {
-    setSession({ name, email });
-    setStage("receipt");
-  };
-
-  const handleReturningUser = (user: UserSession) => {
-    setSession(user);
-    setStage("app");
-    if (typeof window !== "undefined") {
-      window.history.pushState({ spaTab: "home" }, "");
+  const enterSite = async (email: string) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch("/api/capture-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+        signal: controller.signal,
+      });
+      const payload: unknown = await response.json();
+      const result = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+      if (!response.ok || result.success !== true) {
+        const error = new Error(typeof result.error === "string" ? result.error : "Your email couldn’t be saved. Please try again.");
+        error.name = "EmailCaptureError";
+        throw error;
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "EmailCaptureError") throw error;
+      throw new Error("Your email couldn’t be saved. Please try again.");
+    } finally {
+      window.clearTimeout(timeout);
     }
-  };
-
-  const handleReceiptEnter = () => {
+    setUserSession({ name: "", email, captureVersion: 1 });
+    setVisitorEmail(email);
+    setActiveTab("home");
     setStage("app");
-    if (typeof window !== "undefined") {
-      window.history.pushState({ spaTab: "home" }, "");
-    }
+    saveTab("home");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("entry");
+    window.history.replaceState({ spaTab: "home" }, "", `${url.pathname}${url.search}${url.hash}`);
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
-
-  const handleTabChange = (tab: TabId) => {
+  const changeTab = (tab: TabId) => {
+    if (tab === activeTab) {
+      if (backAction) backAction();
+      else window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
     setBackAction(null);
-    setActiveTabState(tab);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(ACTIVE_TAB_KEY, tab);
-      window.history.pushState({ spaTab: tab }, "");
-    }
+    setActiveTab(tab);
+    saveTab(tab);
+    window.history.pushState({ spaTab: tab }, "");
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
-
-  const registerBackAction = useCallback((action: (() => void) | null) => {
-    setBackAction(() => action);
-  }, []);
-
-  const handleSignOut = () => {
-    clearUserSession();
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(ACTIVE_TAB_KEY);
-    }
-    setSession(null);
-    setActiveTabState("home");
-    setStage("gate");
-  };
-
-  if (stage === "loading") {
-    return (
-      <main
-        className="min-h-dvh w-full"
-        style={{ backgroundColor: "var(--background)" }}
-      />
-    );
-  }
-
-  if (stage === "gate") {
-    return (
-      <KeyboardGate
-        onComplete={handleGateComplete}
-        onReturningUser={handleReturningUser}
-      />
-    );
-  }
-
-  if (stage === "receipt") {
-    return (
-      <ReceiptScreen
-        name={session?.name || "visitor"}
-        email={session?.email || "you@somewhere.com"}
-        onEnter={handleReceiptEnter}
-      />
-    );
-  }
-
-  return (
-    <div className="relative min-h-dvh w-full">
-      {/* Global persistent Back button */}
-      {backAction && (
-        <button
-          type="button"
-          onClick={backAction}
-          className="fixed top-4 left-5 z-[80] cursor-pointer text-[10px] tracking-[0.18em] text-faint transition-colors duration-300 hover:text-foreground"
-        >
-          back
-        </button>
-      )}
-
-      {/* Global persistent Sign Out button */}
-      <button
-        type="button"
-        onClick={handleSignOut}
-        className="fixed top-4 z-[80] cursor-pointer text-[10px] tracking-[0.18em] text-faint hover:text-foreground transition-all duration-300"
-        style={{ left: backAction ? "65px" : "20px" }}
-      >
-        sign out
-      </button>
-
-      {/* Global persistent Theme Toggle */}
-      <div className="fixed top-4 right-5 z-[80]">
-        <ThemeToggle />
-      </div>
-
-      {activeTab === "home" && (
-        <HomePanel
-          session={session}
-          signOut={handleSignOut}
-          onNavigateTab={handleTabChange}
-        />
-      )}
-      {activeTab === "companies" && (
-        <CompaniesPanel
-          session={session}
-          signOut={handleSignOut}
-          onNavigateTab={handleTabChange}
-        />
-      )}
-      {activeTab === "socials" && (
-        <SocialsPanel
-          session={session}
-          signOut={handleSignOut}
-          onNavigateTab={handleTabChange}
-          registerBackAction={registerBackAction}
-        />
-      )}
-      {/* {activeTab === "contact" && (
-        <ContactPanel
-          session={session}
-          signOut={handleSignOut}
-          onNavigateTab={handleTabChange}
-        />
-      )} */}
-
-      {/* Persistent Bottom Navigation */}
-      <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
-    </div>
-  );
+  const registerBackAction = useCallback((action: (() => void) | null) => setBackAction(() => action), []);
+  if (stage === "loading") return <main className="min-h-dvh" aria-busy="true" />;
+  if (stage === "gate") return <KeyboardGate onComplete={enterSite} />;
+  return <div className="relative min-h-dvh w-full">
+    <header className="site-header">
+      <div className="site-header-left">{backAction && <button type="button" onClick={backAction} className="header-back">back</button>}</div>
+      <ThemeToggle />
+    </header>
+    <Suspense fallback={<main className="min-h-dvh" aria-busy="true" />}>
+      {activeTab === "home" && <HomePanel />}
+      {activeTab === "companies" && <CompaniesPanel registerBackAction={registerBackAction} />}
+      {activeTab === "contact" && <ContactPanel email={visitorEmail} />}
+    </Suspense>
+    <BottomNavigation activeTab={activeTab} onTabChange={changeTab} />
+  </div>;
 }

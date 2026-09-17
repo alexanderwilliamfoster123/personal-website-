@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { FiArrowUpRight, FiArrowLeft } from "react-icons/fi";
-import { SocialCard } from "./social-media-carousel";
+import type { SocialCard } from "./social-media-carousel";
 import { useTheme } from "@/components/theme-provider";
 
 interface SocialMediaStackScrollProps {
@@ -39,6 +39,7 @@ const StickyCard = ({
         href={card.href}
         target="_blank"
         rel="noopener noreferrer"
+        aria-label={`Visit ${card.title} (opens in a new tab)`}
         style={{
           top: `calc(15vh + ${i * 16}px)`,
           maxWidth: `${cardWidth}px`,
@@ -60,45 +61,9 @@ const StickyCard = ({
           isDark ? "bg-[#141414]" : "bg-[#f7f7f7]"
         }`}
       >
-        {/* Top Left Social Icon Badge */}
-        <div
-          className={`absolute top-3.5 left-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-xl ${
-            isDark ? "bg-white/10 text-white" : "bg-black/5 text-[#111]"
-          }`}
-        >
-          {card.icon}
-        </div>
-
-        {/* Bottom Info & Direct Link Arrow */}
-        <div className="absolute bottom-3.5 left-3.5 right-3.5 z-20 flex items-end justify-between">
-          <div className="flex flex-col items-start text-left">
-            <p
-              className={`text-sm sm:text-base font-medium leading-tight lowercase ${
-                isDark ? "text-white" : "text-black"
-              }`}
-              style={{ fontFamily: '"Neue Montreal", sans-serif' }}
-            >
-              {card.title}
-            </p>
-            <p
-              className={`text-[10px] sm:text-[11px] font-normal mt-0.5 ${
-                isDark ? "text-white/50" : "text-black/50"
-              }`}
-              style={{ fontFamily: '"Neue Montreal", sans-serif' }}
-            >
-              {card.username}
-            </p>
-          </div>
-
-          <div
-            className={`flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-md transition-colors ${
-              isDark
-                ? "bg-white/10 text-white hover:bg-white hover:text-black"
-                : "bg-black/5 text-black hover:bg-black hover:text-white"
-            }`}
-          >
-            <FiArrowUpRight size={14} />
-          </div>
+        <div className="absolute bottom-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-4 py-1" style={{ color: "var(--text-primary)", fontFamily: '"Neue Montreal", sans-serif' }}>
+          <span className="text-sm font-medium leading-tight">{card.title}</span>
+          <FiArrowUpRight size={14} aria-hidden="true" />
         </div>
       </a>
     </div>

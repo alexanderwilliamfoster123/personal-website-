@@ -1,36 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Alexander Foster — working preview
 
-## Getting Started
+Working copy of the user-supplied `alex-foster-portfolio-main.zip`, confirmed as the source of alexanderfoster.com. A Vinext runtime hosts the Next.js App Router source for this independent preview, retaining the original visual language and assets.
 
-First, run the development server:
+The entrance asks for email only, using the supplied interactive MacBook keyboard in graphite and silver themes. Email entry opens the main page directly, without a receipt or particle animation, after the server acknowledges the saved address. Phones use the native email keyboard; the custom keyboard loads for larger pointer-based screens only. Company cards open articles in the existing editorial layout: 01 Vertus, 02 Vanquish, and 03 Alexander William under founded, and 01 Omera under invested. The original full circular wheel is retained: 120-degree spacing for the three founded cards, the original bounce entrance, one-second scrub easing, and the original fade. Desktop uses the original 208px cards, 430px radius, 621.2px window, and 35svh hold position. Mobile scales card size, radius, window height, and wheel position together instead of changing their proportions; cards are 156px wide at a 390px viewport. Native CSS sticky positioning avoids JavaScript pin spacers. The entrance, home caption, contact terminal, and article covers retain their smaller visual scale, with 16px mobile inputs and 44px navigation targets. Physical-device visual verification remains outstanding. Only visitors who request reduced motion receive the native, unpinned card carousel. The single Omera card stays still. Each article links to the corresponding official website.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Venture briefs were checked on 17 September 2026 against [Vertus](https://www.vertus.ai/), [Vanquish](https://www.vanquish.so/), [Alexander William](https://www.alexander-william.com/), and [Omera](https://omera.ai/). They summarise each business without importing performance or valuation claims. The requested replacement hero media is pending the original video files; existing covers remain intact.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Email capture uses the private D1 table `email_captures`, with a unique normalised email, original capture time, and most recent entry time. The write-only capture endpoint validates the email and uses a prepared upsert; it exposes no email list. Previously saved browser-only entries are asked to submit once so they can be captured centrally. Successful visitors are remembered on that browser; `/?entry=1` always reopens the entrance for testing and is removed after submission. Capture does not send email or subscribe anyone to a mailing service. The owner can inspect captured records in the Sites database viewer or through the Sites database tools.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Company cards use a medium portrait format, with readable labels and the same article links. A shared material finish combines a small static grain tile, fine brushed lines, and crisp beveled edges: graphite in dark mode and silver in light mode. Desktop type renders at its native size, without permanent downscaling or backdrop blur. Socials is hidden for now, alongside Writing, Frames, and sign-out. Previously saved Socials selections return to Home. Contact opens with “say hello” and a quiet “email alex via the terminal” action. The supplied BashTool component is adapted into a 288px-wide mail terminal with a static `mail alex` command, the captured reply-to email, and an expanding message field. It is a presentation of the email flow, not a shell. Visitors only write their message: Enter sends, Shift+Enter adds a line, and Escape or Close collapses the terminal without discarding the draft. Sending shows a subtle shimmer; an accepted response shows confirmation and a Write another action. Failures retain the draft and offer Retry. Drafts survive navigation and refresh within the same browser tab when session storage is available, and unchanged retries reuse the same idempotency key. Light and dark themes, keyboard focus, reduced motion, and mobile 44px targets / 16px input text are supported. The navigation uses the supplied Apple-style Dock composition, with a quiet, compact tray, thin icons, and spring-based hover magnification.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This preview keeps device preferences and the returning-visitor marker locally. It does not publish to alexanderfoster.com. Contact email sending is separate from capture. The hosted CONTACT_TO_EMAIL is set to contact@alexanderfoster.com. Delivery still requires a server-side RESEND_API_KEY and RESEND_FROM_EMAIL for a verified sending domain; neither is currently configured. NEXT_PUBLIC_CONTACT_TO_EMAIL is supported as a legacy fallback. Without the sending credentials, the endpoint returns an explicit unavailable response and the form retains the message. The endpoint validates and bounds submissions, uses the fixed server-configured recipient and visitor reply-to, sends plain text, rejects the honeypot, and reuses an idempotency key when an unchanged draft is retried. It reports success only after Resend returns a message ID; that acknowledgement is not a guarantee of inbox delivery.
 
-## Learn More
+To activate delivery, add a sending-only Resend API key as the hosted RESEND_API_KEY secret and set RESEND_FROM_EMAIL to a sender on a verified Resend domain. Preserve the receiving mailbox's existing MX records when verifying sending. Apply the environment revision with a deployment, send one labelled test to contact@alexanderfoster.com through the contact flow, and confirm delivery and reply-to before considering the connection complete. Runtime credentials must never be committed to source.
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Use the project pnpm lockfile and existing scripts. Managed previews are started with `sites-preview start` from this directory. The `.openai/hosting.json` file stores the identity of this working site. Follow the Sites workflow for publishing updates.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The project already has shadcn, TypeScript, Tailwind CSS 4, and Lucide. UI components live in `components/ui`, the textarea hook in `components/hooks`, and theme styles in `app/globals.css`. No extra image assets or providers are needed.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The bottom navigation uses the supplied `Dock`, `DockItem`, `DockIcon`, and `DockLabel` composition in `components/ui/dock.tsx`, wired to Home, Founded, and Contact. The site uses a minimal 56px tray with a fine border, 6px gaps, transparent buttons, and thin 17px icons. Items magnify gently from 40 to 60px with the supplied spring; labels rise above each item. The shared component's original defaults remain available. Native buttons make every item functional with mouse, touch, Enter, and Space. Pointer coordinates are viewport-relative, and the labels also work with keyboard focus. Phones retain a visible horizontal dock with 44px touch targets; reduced motion keeps sizes stable and removes animated transitions. Theme colors follow the site's data-theme attribute. Existing Framer Motion and Lucide dependencies supply everything needed.

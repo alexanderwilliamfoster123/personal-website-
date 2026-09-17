@@ -1,6 +1,7 @@
 export interface UserSession {
   name: string;
   email: string;
+  captureVersion?: 1;
 }
 
 export const USER_SESSION_KEY = "alex_foster_user_session";
@@ -27,7 +28,7 @@ export function setUserSession(session: UserSession): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
-    // Also save to permanent registered users list
+    // Local convenience only; the server-side email_captures table is authoritative.
     saveRegisteredUser(session);
   } catch (err) {
     console.error("Failed to save user session", err);
@@ -83,7 +84,7 @@ export function findRegisteredUser(email: string): UserSession | null {
 }
 
 /**
- * Saves or updates a user in the persistent registry across sign-outs.
+ * Saves or updates a browser-local history of entered addresses.
  */
 export function saveRegisteredUser(user: UserSession): void {
   if (typeof window === "undefined") return;
@@ -110,4 +111,3 @@ export function saveRegisteredUser(user: UserSession): void {
     console.error("Failed to save registered user", err);
   }
 }
-
