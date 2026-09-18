@@ -37,5 +37,5 @@ TypeScript and production builds are checked before publication. Browser QA was 
 - `CONTACT_TO_EMAIL` is configured on the working Site as `alex@alexanderfoster.com`.
 - Email capture and email sending are separate. Actual sending still requires a server-only `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL`. Neither sending value was configured in this session. Do not report delivery as active until a real test arrives.
 - Resend acknowledgement is only reported when the provider returns a message ID. Failed sends retain the draft and reuse an idempotency key for unchanged retries.
-- The requested company hero videos / 3D media have not been supplied. Existing article covers remain in place.
+- Company briefs now use a minimal text-only layout inspired by tjruss.com: a narrow column, company title, existing description paragraphs, and a plain website link. Cover images, metadata and entrance effects are omitted. The earlier hero-media request is superseded by this text-only presentation.
 - No credentials, captured email records, local preferences, dependency folders, or generated build output belong in the repository.
