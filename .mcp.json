@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "typesafe": { "command": "node", "args": ["mcp/typesafe-server.mjs"] }
+  }
+}
