@@ -5,6 +5,8 @@ Writes OUT_DIR/index.html and OUT_DIR/img/*.jpg (publish OUT_DIR as the artifact
 """
 import html
 import json
+
+import numpy as np
 import os
 import shutil
 import sys
@@ -97,7 +99,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
   text-transform: uppercase; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 6px 12px }
 .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor }
 .hero { margin: 0; justify-self: end; width: min(100%, 420px) }
-.hero img, .frame img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; background: #fff }
+.hero img, .frame img { display: block; width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: cover; background: #fff }
 .hero img { border: 1px solid var(--frame-edge) }
 .hero figcaption { font: 400 12px/1.45 var(--mono); color: var(--ink-2); margin-top: var(--s2) }
 
@@ -121,7 +123,7 @@ section { padding-top: var(--s7) }
   font: 500 11px/1.35 var(--mono); min-width: 0 }
 .chip b { font: 600 12px/1.2 var(--body); display: block; overflow-wrap: anywhere }
 .states { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s4); margin-top: var(--s5) }
-.state img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; border: 1px solid var(--frame-edge); background: #fff }
+.state img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; display: block; border: 1px solid var(--frame-edge); background: #fff }
 .state h3 { font-size: 18px; font-variation-settings: "wdth" 112; margin-top: var(--s2) }
 .state p { font-size: 14px; color: var(--ink-2) }
 .rules { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s5); margin-top: var(--s6) }
@@ -177,7 +179,7 @@ tfoot td { font-weight: 600; border-bottom: 0 }
 /* lightbox */
 dialog { border: 0; padding: 0; background: transparent; max-width: min(96vw, 620px); max-height: 96vh }
 dialog::backdrop { background: rgba(18, 6, 12, .82) }
-dialog img { display: block; max-height: 86vh; width: auto; max-width: 100%; margin: 0 auto; background: #fff }
+dialog img { display: block; max-height: 86vh; width: auto; height: auto; max-width: 100%; margin: 0 auto; background: #fff }
 dialog p { color: #F7EEF2; font: 400 13px/1.4 var(--mono); margin-top: var(--s2); text-align: center }
 dialog button { position: fixed; top: max(12px, env(safe-area-inset-top, 0px)); right: 12px; font: 500 13px var(--mono); color: #F7EEF2;
   background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .3); border-radius: 999px; padding: 8px 14px; cursor: pointer }
@@ -293,8 +295,9 @@ for f in FILMS:
 rows = []
 for f in FILMS:
     frames = f["runtime"] * fps
-    heavy = f["slug"] in ("resolve", "states", "depth")
-    spf = 240 if heavy else 150
+    # project from this film's measured storyboard renders (540x960) to the 1080x1920 master
+    meas = [times[f"{f['id']}:{i}"]["render"] for i in range(len(f["beats"])) if f"{f['id']}:{i}" in times]
+    spf = int(round(np.mean(meas) * 4 / 10.0) * 10) if meas else 150
     hrs = frames * spf / 3600
     rows.append((f, frames, spf, hrs))
 tot_frames = sum(r[1] for r in rows)
@@ -317,9 +320,10 @@ for f, frames, spf, hrs in rows:
       f'<td class="num">{spf}</td><td class="num">{hrs:.0f} h</td><td class="num">{hrs:.0f} h</td></tr>')
 w(f'</tbody><tfoot><tr><td>Series</td><td class="num">{total} s</td><td class="num">{tot_frames:,}</td><td></td>'
   f'<td class="num">{tot_hrs:.0f} h</td><td class="num">{max(r[3] for r in rows):.0f} h</td></tr></tfoot></table></div>')
-w('<p class="spec" style="margin-top:8px">Seconds per frame measured on look-dev at 1080 × 1920 and 64 samples: 147 s for bead shots; '
-  'fibre and gel shots are estimated higher. "Six in parallel" runs each film in its own render session at the same time. '
-  'The same code on a single NVIDIA GPU renders roughly 10 to 20 times faster.</p>')
+w('<p class="spec" style="margin-top:8px">Seconds per frame are projected from each film\'s own storyboard renders '
+  '(540 × 960, 64 samples) scaled to the 1080 × 1920 master; the full-size look-dev frame confirms it (147 s for 700,000 beads). '
+  'Fibre-heavy shots will move to ribbon curves for the masters, which roughly halves their cost. "Six in parallel" runs each film '
+  'in its own render session at the same time. The same code on one NVIDIA GPU renders roughly 10 to 20 times faster.</p>')
 w('<div class="cols2"><div><h3>Deliverables per film</h3><ul>'
   '<li>9:16 master, 1080 × 1920, 24 fps, H.264 high bitrate plus ProRes 422 HQ</li>'
   '<li>4:5 feed cut, 1080 × 1350 (the dashed lines on every panel mark that crop)</li>'
@@ -331,7 +335,9 @@ w('<div><h3>What I need from you</h3><ol>'
   '<li>Approve or rewrite the six supers (the one line on each end card).</li>'
   '<li>Runtimes: 12 to 20 s as boarded. Say if Reels needs anything shorter.</li>'
   '<li>Sound: procedural sound design only (as boarded), or a composed music bed.</li>'
-  '<li>Render plan: run the six films in parallel sessions to finish in about a day.</li></ol></div></div>')
+  f'<li>Render plan: run the six films in parallel render sessions, about {max(r[3] for r in rows):.0f} hours of wall-clock '
+  'time, or on a GPU machine if you have one.</li>'
+  '<li>Optional: pick one shot and I will render a three-second motion test of it first.</li></ol></div></div>')
 w('</section>')
 w('<p class="foot">Panels: 540 × 960 previews from the production engine (Blender 5.2 Cycles via Python, numba simulation), '
   'lower sample counts than the masters. Palette sampled from the campaign references. Wordmark from the Vertus brand SVG.</p>')
