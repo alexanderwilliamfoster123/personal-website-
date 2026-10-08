@@ -16,11 +16,16 @@ from . import palette
 
 
 class MassShape:
-    """Parameter bundle for the mass SDF (plain arrays so numba can take them)."""
+    """Parameter bundle for the mass SDF (plain arrays so numba can take them).
+
+    A uniform grid over the lobes lists, per cell, only the lobes that can touch
+    the smooth-min there, so a 1,000-lobe plume field costs about as much as a
+    20-lobe blob.
+    """
 
     def __init__(self, lobes, k=0.35, warp_amp=0.18, warp_freq=0.9, t=0.0,
                  bump_amp=0.06, bump_freq=3.2, fold_amp=0.035, fold_freq=5.5,
-                 perm=PERM, ribbons=None):
+                 perm=PERM, ribbons=None, grid_h=None):
         self.lobes = np.ascontiguousarray(lobes, dtype=np.float64)
         self.k = float(k)
         self.warp_amp = float(warp_amp)
@@ -34,10 +39,21 @@ class MassShape:
         # ribbons: (M, 7) capsule chain segments ax ay az bx by bz r
         self.ribbons = (np.zeros((0, 7)) if ribbons is None
                         else np.ascontiguousarray(ribbons, dtype=np.float64))
+        self.grid_h = grid_h
+        self._grid = None
+
+    def grid(self):
+        if self._grid is None:
+            r = self.lobes[:, 3]
+            h = self.grid_h or float(np.clip(np.median(r) * 0.9, 0.04, 0.16))
+            pad = float(r.max() * (1 + self.k) + 0.1)
+            self._grid = build_lobe_grid(self.lobes, self.k, h, pad)
+        return self._grid
 
     def args(self):
+        g = self.grid()
         return (self.lobes, self.ribbons, self.k, self.warp_amp, self.warp_freq, self.t,
-                self.bump_amp, self.bump_freq, self.fold_amp, self.fold_freq, self.perm)
+                self.bump_amp, self.bump_freq, self.fold_amp, self.fold_freq, self.perm) + tuple(g)
 
     def sdf(self, P):
         return mass_sdf(np.ascontiguousarray(P, dtype=np.float64), *self.args())
@@ -56,6 +72,44 @@ class MassShape:
         return lo - pad, hi + pad
 
 
+@njit(cache=True, parallel=True)
+def _grid_pass(lobes, k, lo, n, h, start, items, fill):
+    L = lobes.shape[0]
+    nc = n[0] * n[1] * n[2]
+    half = h * math.sqrt(3.0) * 0.5
+    counts = np.zeros(nc, dtype=np.int64)
+    for c in prange(nc):
+        ix = c // (n[1] * n[2]); iy = (c // n[2]) % n[1]; iz = c % n[2]
+        cx = lo[0] + (ix + 0.5) * h; cy = lo[1] + (iy + 0.5) * h; cz = lo[2] + (iz + 0.5) * h
+        best = 1e18
+        for j in range(L):
+            dx = cx - lobes[j, 0]; dy = cy - lobes[j, 1]; dz = cz - lobes[j, 2]
+            best = min(best, math.sqrt(dx * dx + dy * dy + dz * dz) + half - lobes[j, 3])
+        w = start[c] if fill else 0
+        cnt = 0
+        for j in range(L):
+            dx = cx - lobes[j, 0]; dy = cy - lobes[j, 1]; dz = cz - lobes[j, 2]
+            # generous margin: the running smooth-min sits a little below the true min
+            if math.sqrt(dx * dx + dy * dy + dz * dz) - half - lobes[j, 3] < best + 2.0 * k * lobes[j, 3] + 0.03:
+                if fill:
+                    items[w + cnt] = j
+                cnt += 1
+        counts[c] = cnt
+    return counts
+
+
+def build_lobe_grid(lobes, k, h, pad):
+    lo = (lobes[:, :3] - lobes[:, 3:4]).min(0) - pad
+    hi = (lobes[:, :3] + lobes[:, 3:4]).max(0) + pad
+    n = (np.ceil((hi - lo) / h).astype(np.int64) + 1)
+    dummy = np.zeros(1, dtype=np.int64)
+    counts = _grid_pass(lobes, k, lo, n, h, dummy, dummy, False)
+    start = np.concatenate([[0], np.cumsum(counts)]).astype(np.int64)
+    items = np.empty(start[-1], dtype=np.int64)
+    _grid_pass(lobes, k, lo, n, h, start, items, True)
+    return lo, np.array([h]), n, start, items
+
+
 @njit(cache=True, fastmath=True, inline="always")
 def _smin(a, b, k):
     h = max(k - abs(a - b), 0.0) / k
@@ -63,7 +117,7 @@ def _smin(a, b, k):
 
 
 @njit(cache=True, fastmath=True)
-def _sdf1(x, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm):
+def _sdf1(x, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems):
     # ink billow: low-frequency vector warp, animated
     if wa > 0.0:
         qx = x + wa * fbm(x * wf + 31.4, y * wf + t, z * wf - 12.7, 3, 2.03, 0.5, perm)
@@ -72,18 +126,29 @@ def _sdf1(x, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm):
     else:
         qx = x; qy = y; qz = z
     d = 1e9
-    for j in range(lobes.shape[0]):
-        dx = qx - lobes[j, 0]; dy = qy - lobes[j, 1]; dz = qz - lobes[j, 2]
-        dj = math.sqrt(dx * dx + dy * dy + dz * dz) - lobes[j, 3]
-        d = _smin(d, dj, k * lobes[j, 3])
+    h = gh[0]
+    ix = int(math.floor((qx - glo[0]) / h)); iy = int(math.floor((qy - glo[1]) / h))
+    iz = int(math.floor((qz - glo[2]) / h))
+    if 0 <= ix < gn[0] and 0 <= iy < gn[1] and 0 <= iz < gn[2]:
+        c = (ix * gn[1] + iy) * gn[2] + iz
+        for s in range(gstart[c], gstart[c + 1]):
+            j = gitems[s]
+            dx = qx - lobes[j, 0]; dy = qy - lobes[j, 1]; dz = qz - lobes[j, 2]
+            dj = math.sqrt(dx * dx + dy * dy + dz * dz) - lobes[j, 3]
+            d = _smin(d, dj, k * lobes[j, 3])
+    else:
+        for j in range(lobes.shape[0]):
+            dx = qx - lobes[j, 0]; dy = qy - lobes[j, 1]; dz = qz - lobes[j, 2]
+            dj = math.sqrt(dx * dx + dy * dy + dz * dz) - lobes[j, 3]
+            d = _smin(d, dj, k * lobes[j, 3])
     for j in range(ribbons.shape[0]):
         ax = ribbons[j, 0]; ay = ribbons[j, 1]; az = ribbons[j, 2]
         bx = ribbons[j, 3] - ax; by = ribbons[j, 4] - ay; bz = ribbons[j, 5] - az
         px = qx - ax; py = qy - ay; pz = qz - az
         bb = bx * bx + by * by + bz * bz
-        h = (px * bx + py * by + pz * bz) / bb if bb > 0 else 0.0
-        h = min(max(h, 0.0), 1.0)
-        ex = px - bx * h; ey = py - by * h; ez = pz - bz * h
+        hh = (px * bx + py * by + pz * bz) / bb if bb > 0 else 0.0
+        hh = min(max(hh, 0.0), 1.0)
+        ex = px - bx * hh; ey = py - by * hh; ez = pz - bz * hh
         dj = math.sqrt(ex * ex + ey * ey + ez * ez) - ribbons[j, 6]
         d = _smin(d, dj, k * 0.5)
     # cauliflower bumps and gyri folds only matter near the surface
@@ -96,26 +161,27 @@ def _sdf1(x, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm):
 
 
 @njit(parallel=True, cache=True, fastmath=True)
-def mass_sdf(P, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm):
+def mass_sdf(P, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems):
     n = P.shape[0]
     out = np.empty(n)
     for i in prange(n):
-        out[i] = _sdf1(P[i, 0], P[i, 1], P[i, 2], lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm)
+        out[i] = _sdf1(P[i, 0], P[i, 1], P[i, 2], lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm,
+                       glo, gh, gn, gstart, gitems)
     return out
 
 
 @njit(parallel=True, cache=True, fastmath=True)
-def mass_grad(P, e, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm):
+def mass_grad(P, e, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems):
     n = P.shape[0]
     out = np.empty((n, 3))
     for i in prange(n):
         x = P[i, 0]; y = P[i, 1]; z = P[i, 2]
-        gx = _sdf1(x + e, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm) - \
-            _sdf1(x - e, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm)
-        gy = _sdf1(x, y + e, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm) - \
-            _sdf1(x, y - e, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm)
-        gz = _sdf1(x, y, z + e, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm) - \
-            _sdf1(x, y, z - e, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm)
+        gx = _sdf1(x + e, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems) - \
+            _sdf1(x - e, y, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems)
+        gy = _sdf1(x, y + e, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems) - \
+            _sdf1(x, y - e, z, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems)
+        gz = _sdf1(x, y, z + e, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems) - \
+            _sdf1(x, y, z - e, lobes, ribbons, k, wa, wf, t, ba, bf, fa, ff, perm, glo, gh, gn, gstart, gitems)
         inv = 1.0 / (2 * e)
         out[i, 0] = gx * inv; out[i, 1] = gy * inv; out[i, 2] = gz * inv
     return out

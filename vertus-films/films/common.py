@@ -163,7 +163,7 @@ def helix(n, turns=2.6, radius=0.55, height=2.6, tube=0.13, phase=0.0, seed=0, r
 
 
 def strand_fibers(centerline, n_fibers=120, radius=0.03, twist=6.0, fray_start=0.75, fray=0.25,
-                  seed=0, samples=None, r_fiber=0.0012, curl_amp=0.03):
+                  seed=0, samples=None, r_fiber=0.0012, curl_amp=0.03, flyaway=0.06):
     """A twisted strand of fibres around a centerline, fraying open past fray_start.
 
     centerline (S,3). Returns pts (F,S,3), radii (F,S).
@@ -188,6 +188,12 @@ def strand_fibers(centerline, n_fibers=120, radius=0.03, twist=6.0, fray_start=0
         rr = r0 + fr * fray * rng.uniform(0.3, 1.0)
         off = N * (rr * np.cos(ang))[:, None] + Bv * (rr * np.sin(ang))[:, None]
         jitter = rng.normal(0, 1, (S, 3)).cumsum(0) * curl_amp * 0.02 * fr[:, None]
+        if rng.random() < flyaway:
+            # a loose fibre lifting off the strand partway along it
+            u0 = rng.uniform(0.1, 0.8)
+            lift = np.clip((u - u0) / 0.25, 0, 1) ** 1.4 * rng.uniform(0.02, 0.07)
+            dirn = rng.normal(size=3); dirn /= np.linalg.norm(dirn)
+            jitter = jitter + lift[:, None] * dirn[None, :]
         pts[f] = C + off + jitter
     radii = np.full((n_fibers, S), r_fiber) * (1 - 0.6 * np.linspace(0, 1, S) ** 4)[None, :]
     return pts, radii
@@ -225,7 +231,8 @@ def iso_mesh(sdf, lo, hi, res=160, level=0.0):
     G = np.stack(np.meshgrid(*xs, indexing="ij"), -1).reshape(-1, 3)
     d = sdf(G).reshape(n)
     V, F, Nn, _ = marching_cubes(d, level, spacing=(h, h, h))
-    return V + lo, F[:, ::-1].copy()
+    # skimage already winds faces outward for negative-inside fields
+    return V + lo, F
 
 
 def tube_sdf(curve, radius):
@@ -276,7 +283,7 @@ def render_spec(spec, out_png, res=(540, 960), spp=64, threshold=0.03, finish=Tr
     L = spec.get("lights", {})
     bl.setup_render(res=res, spp=spp, threshold=threshold, view=spec.get("view", "Standard"),
                     exposure=spec.get("exposure", 0.0), bounces=spec.get("bounces", (3, 3, 10, 8)))
-    bl.world_studio(strength=L.get("world", 0.06))
+    bl.world_studio(strength=L.get("world", 0.06), flags=L.get("flags", False))
     bl.studio_lights(center=tuple(L.get("center", (0, 0, 0))), key=L.get("key", 1.0), rim=L.get("rim", 1.0),
                      top=L.get("top", 0.0), kick=L.get("kick", 0.0), scale=L.get("scale", 1.0),
                      key_dir=tuple(L.get("key_dir", (-0.45, -0.35, 0.82))),

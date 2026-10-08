@@ -277,7 +277,10 @@ for f in FILMS:
             w(f'<button class="frame" type="button" data-full="{img}" data-cap="{esc(alt)} · {b["tc"]}" aria-label="Enlarge {esc(alt)}">'
               f'<img src="{img}" alt="{esc(alt)}" loading="lazy" width="540" height="960"><span class="safe" aria-hidden="true"></span></button>')
         w('<div class="cap">')
-        w(f'<p class="tc"><b>SH {i + 1:02d}</b><span>{b["tc"]}</span></p>')
+        t0 = int(b["tc"][:2]) * 60 + int(b["tc"][3:])
+        nxt = f["beats"][i + 1]["tc"] if i + 1 < n else None
+        t1 = int(nxt[:2]) * 60 + int(nxt[3:]) if nxt else f["runtime"]
+        w(f'<p class="tc"><b>SH {i + 1:02d}</b><span>{b["tc"]}–00:{t1:02d} · {t1 - t0} s</span></p>')
         w(f'<h4>{esc(b["name"])}</h4><p class="spec">{esc(b["shot"])}</p>')
         w(f'<p>{esc(b["action"])}</p>')
         w(f'<dl><dt>Cam</dt><dd>{esc(b["camera"])}</dd><dt>Sound</dt><dd>{esc(b["sound"])}</dd></dl>')

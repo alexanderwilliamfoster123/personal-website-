@@ -71,8 +71,13 @@ def setup_render(res=(1080, 1920), spp=96, threshold=0.02, denoise=True, threads
     return sc
 
 
-def world_studio(strength=1.0, color=(1.0, 0.985, 0.99), floor_tint=(0.93, 0.92, 0.94)):
-    """White cyclorama as an environment: bright from above, a touch darker below."""
+def world_studio(strength=1.0, color=(1.0, 0.985, 0.99), floor_tint=(0.93, 0.92, 0.94), seen=1.15, flags=False):
+    """White cyclorama as an environment.
+
+    Diffuse bounces see a dim fill (`strength`) so folds stay deep, while
+    reflection and refraction rays see the bright white cyc (`seen`), so gel
+    and glass read as clear pink against white, exactly as on a real stage.
+    """
     w = bpy.data.worlds.new("studio")
     w.use_nodes = True
     bpy.context.scene.world = w
@@ -93,7 +98,35 @@ def world_studio(strength=1.0, color=(1.0, 0.985, 0.99), floor_tint=(0.93, 0.92,
     mix.inputs["A"].default_value = (*floor_tint, 1)
     mix.inputs["B"].default_value = (*color, 1)
     nt.links.new(mix.outputs["Result"], bg.inputs["Color"])
-    bg.inputs["Strength"].default_value = strength
+    if flags:
+        # dark flags at the horizon and below: what glass needs to show its edges
+        fl = nt.nodes.new("ShaderNodeValToRGB")
+        cr = fl.color_ramp
+        cr.elements[0].position = 0.0; cr.elements[0].color = (0.62, 0.6, 0.62, 1)
+        cr.elements[1].position = 1.0; cr.elements[1].color = (1.0, 1.0, 1.0, 1)
+        for pos, v in ((0.42, 0.95), (0.5, 0.2), (0.56, 0.9), (0.7, 1.0)):
+            e = cr.elements.new(pos); e.color = (v, v * 0.985, v, 1)
+        nt.links.new(sep.outputs["Z"], fl.inputs["Fac"])
+        lp0 = nt.nodes.new("ShaderNodeLightPath")
+        gm = nt.nodes.new("ShaderNodeMath"); gm.operation = "MAXIMUM"
+        nt.links.new(lp0.outputs["Is Glossy Ray"], gm.inputs[0])
+        nt.links.new(lp0.outputs["Is Transmission Ray"], gm.inputs[1])
+        mix2 = nt.nodes.new("ShaderNodeMix"); mix2.data_type = "RGBA"
+        nt.links.new(gm.outputs[0], mix2.inputs["Factor"])
+        nt.links.new(mix.outputs["Result"], mix2.inputs["A"])
+        nt.links.new(fl.outputs["Color"], mix2.inputs["B"])
+        nt.links.new(mix2.outputs["Result"], bg.inputs["Color"])
+    lp = nt.nodes.new("ShaderNodeLightPath")
+    mx = nt.nodes.new("ShaderNodeMath"); mx.operation = "MAXIMUM"
+    nt.links.new(lp.outputs["Is Glossy Ray"], mx.inputs[0])
+    nt.links.new(lp.outputs["Is Transmission Ray"], mx.inputs[1])
+    st = nt.nodes.new("ShaderNodeMapRange")
+    st.inputs["From Min"].default_value = 0.0
+    st.inputs["From Max"].default_value = 1.0
+    st.inputs["To Min"].default_value = strength
+    st.inputs["To Max"].default_value = seen
+    nt.links.new(mx.outputs[0], st.inputs["Value"])
+    nt.links.new(st.outputs["Result"], bg.inputs["Strength"])
     nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
     return w
 
@@ -286,7 +319,7 @@ def mat_bubble(name="bubble", ior=1.0 / 1.42):
     return m
 
 
-def mat_tissue(name="tissue", sss=0.5, rough=0.42):
+def mat_tissue(name="tissue", sss=0.5, rough=0.42, sheen=0.3):
     """Smooth folded tissue (the card's ribbon folds): vertex colour + soft SSS."""
     m, nt, out = _mat(name)
     p = nt.nodes.new("ShaderNodeBsdfPrincipled")
@@ -296,8 +329,8 @@ def mat_tissue(name="tissue", sss=0.5, rough=0.42):
     p.inputs["Roughness"].default_value = rough
     p.inputs["Subsurface Weight"].default_value = sss
     p.inputs["Subsurface Scale"].default_value = 0.02
-    p.inputs["Subsurface Radius"].default_value = (1.0, 0.3, 0.4)
-    p.inputs["Sheen Weight"].default_value = 0.3
+    p.inputs["Subsurface Radius"].default_value = (1.0, 0.38, 0.62)
+    p.inputs["Sheen Weight"].default_value = sheen
     nt.links.new(p.outputs[0], out.inputs["Surface"])
     return m
 
